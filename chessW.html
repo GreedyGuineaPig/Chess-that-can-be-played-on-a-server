@@ -7,8 +7,8 @@
   <base href="../" />
   <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css" integrity="sha384-q94+BZtLrkL1/ohfjR8c6L+A6qzNH9R2hBLwyoAfu3i/WCvQjzL2RQJ3uNHDISdU" crossorigin="anonymous">
   <style>
-     div.board{
-       
+     /* put board and other stuff in parallel */
+    div.board{
        float: left;
      }
      div.infoSpace{
@@ -18,10 +18,13 @@
   </style>
 </head>
 <body>
+  <!-- load scripts -->
   <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
   <script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.2/chess.js"></script> 
   <script type="text/javascript" src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
+  
+  <!-- define elements -->
   <div class="board">
     <div id="myBoard" style="width: 400px"></div>
   </div>
@@ -43,7 +46,7 @@
     </form>
   </div>
 
-
+  <!-- Game handler -->
   <script>
     var socket = io();
     var board = null
@@ -55,7 +58,8 @@
     function onDragStart (source, piece, position, orientation) {
       // do not pick up pieces if the game is over
       if (game.game_over()) return false
-
+      
+      // can only pick own pieces.
       if ((orientation === 'white' && piece.search(/^w/) === -1) ||
         (orientation === 'black' && piece.search(/^b/) === -1)) {
       return false
@@ -132,9 +136,12 @@
       });
 
     function rematch(){
+      // wait 11 seconds and reload.
+      // Since the waiting period is slower than chessW.html's period,
+      // this client will become a black side
       setInterval(() => {
         location.reload();
-      }, 10000);
+      }, 11000);
     }
 
     // socket.on("disconnect", function(){
@@ -163,11 +170,10 @@
     updateStatus()
 
   </script>
-<!-- chat handler -->
 
+<!-- chat handler -->
   <script>
     var socket = io();
-
     var form = document.getElementById('form');
     var input = document.getElementById('input');
     var msgCount = 0;
@@ -186,17 +192,29 @@
       messages.appendChild(item);
       msgCount += 1;
       if(msgCount == 3){
+        // Restrict the num of message log.
         messages.removeChild(messages.childNodes[0]);
         msgCount -= 1;
       }
       window.scrollTo(0, document.body.scrollHeight);
     });
   </script>
-  <!-- Count down timer -->
+
+  <!-- Count down timer (in progress)-->
   <script>
+    var time = 180;
+    var counter;
+    var min = document.getElementById("min");
+    var sec = document.getElementById("sec");
+    var stop = document.getElementById("stop");
+
     socket.on("start", function(){
       timerStart()
     });
+
+    function timerStart(){
+      counter = setInterval( count, 1000 );
+    }
   </script>
 
 </body>
