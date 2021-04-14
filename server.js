@@ -36,6 +36,10 @@ io.on('connection', (socket) => {
         io.emit("chat message", msg);
         console.log(msg)
   });
+  socket.on("stop", (time) =>{
+    io.emit("stop", time);
+    console.log(msg)
+});
 });
 
 http.listen(3000, () => {
