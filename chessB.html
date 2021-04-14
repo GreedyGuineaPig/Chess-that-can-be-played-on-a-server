@@ -54,11 +54,17 @@
     var $status = $('#status')
     var $fen = $('#fen')
     var $pgn = $('#pgn')
+    var isYourTurn = true
   
     function onDragStart (source, piece, position, orientation) {
       // do not pick up pieces if the game is over
       if (game.game_over()) return false
-  
+      
+      // in case your opponent did not stop his timer
+      if (!isYourTurn){
+        return false
+      }
+
       // can only pick own pieces.
       if ((orientation === 'white' && piece.search(/^w/) === -1) ||
         (orientation === 'black' && piece.search(/^b/) === -1)) {
@@ -134,6 +140,13 @@
         board.position(game.fen())
         updateStatus()
     });
+
+    socket.on("stop", function(time){
+      // start your timer when you receive "stop"
+      var OppornentsTime = time // may indicate 
+      isYourTurn = true
+      startTimer()
+    });
   
   
     function pieceTheme(piece){
@@ -208,12 +221,24 @@
         var stop = document.getElementById("stop");
 
         socket.on("start", function(){
-          timerStart()
+          startTimer()
         });
 
-        function timerStart(){
+        function startTimer(){
+          // TODO
+          // Count down and store minutes and seconds to min and sec
           counter = setInterval( count, 1000 );
         }
+
+        function countStop(){
+          // TODO
+          // when you press "stop", emit message and start the opponent's timer
+          socket.emit("stop", (min, sec))
+          isYourTurn = false
+        }
+
+        // TODO: min==0 and sec==0 -> you lose
       </script>
   
   </body>
+  </html>
