@@ -2,25 +2,37 @@ const app = require('express')();
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
 var playerNum = 0
+var allClients = []
 
 app.get('/', (req, res) => {
         if(playerNum == 0){
                 res.sendFile(__dirname + '/chessW.html');
-        }else{
+                
+        }else if(playerNum == 1){
                 res.sendFile(__dirname + '/chessB.html');                
         }
-        playerNum = (playerNum + 1) % 2;
+        playerNum = (playerNum + 1) % 2
         console.log(playerNum)
 });
 
 io.on('connection', (socket) => {
   console.log('a user connected');
+  // allClients.push(socket)
   socket.on('disconnect', () => {
     console.log('user disconnected');
+    // var i = allClients.indexOf(socket);
+    //   allClients.splice(i, 1);
+    //   allClients.forEach(client => {
+    //     client.emit("disconnect")
+    //   });
   });
   socket.on('move', (move) => {
     console.log("move", move.from + "-" + move.to)
     io.emit('move', move);
+  });
+  socket.on("chat message", (msg) =>{
+        io.emit("chat message", msg);
+        console.log(msg)
   });
 });
 

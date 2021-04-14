@@ -6,20 +6,42 @@
   <title>black</title>
   <base href="../" />
   <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css" integrity="sha384-q94+BZtLrkL1/ohfjR8c6L+A6qzNH9R2hBLwyoAfu3i/WCvQjzL2RQJ3uNHDISdU" crossorigin="anonymous">
-  <!-- <script src="CS340/node_modules/socket.io/client-dist/socket.io.js"></script> -->
+  <style>
+    div.board{
+      
+      float: left;
+    }
+    div.infoSpace{
+      width: auto;
+      float: left;
+    }
+ </style>
 </head>
 <body>
-  <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-  <script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.2/chess.js"></script> 
-  <script type="text/javascript" src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
-  <script src="/socket.io/socket.io.js"></script>
-  <div id="myBoard" style="width: 400px"></div>
-  <label>Status:</label>
-  <div id="status"></div>
-  <label>FEN:</label>
-  <div id="fen"></div>
-  <label>PGN:</label>
-  <div id="pgn"></div>
+ <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+ <script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.2/chess.js"></script> 
+ <script type="text/javascript" src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+ <script src="/socket.io/socket.io.js"></script>
+ <div class="board">
+   <div id="myBoard" style="width: 400px"></div>
+ </div>
+ <div class="infoSpace">
+  <label>Time: </label>
+  <span id="min">40</span> m
+  <span id="sec">0</span> s
+  <input id="stop" type="button" onclick="countStop()" value="Stop">
+  <br>
+   <label>Status:</label>
+   <div id="status"></div>
+   <label>FEN:</label>
+   <div id="fen"></div>
+   <label>PGN:</label>
+   <div id="pgn"></div>
+   <ul id="messages"></ul>
+   <form id="form" action="">
+     <input id="input" autocomplete="off" /><button>Send</button>
+   </form>
+ </div>
 
   
   <script>
@@ -77,11 +99,15 @@
       // checkmate?
       if (game.in_checkmate()) {
         status = 'Game over, ' + moveColor + ' is in checkmate.'
+        status += "\nWait 10 second to rematch"
+        rematch();
       }
-  
+
       // draw?
       else if (game.in_draw()) {
         status = 'Game over, drawn position'
+        status += "\nWait 10 second to rematch"
+        rematch();
       }
   
       // game still on
@@ -109,6 +135,19 @@
     function pieceTheme(piece){
       return "https://chessboardjs.com/img/chesspieces/wikipedia/" + piece + ".png";
     }
+
+    function rematch(){
+      setInterval(() => {
+        location.reload();
+      }, 11000);
+    }
+
+    // socket.on("disconnect", function(){
+    //   window.alert("The opponent disconnected.")
+    //   setInterval(() => {
+    //     location.reload();
+    //   }, 5000);
+    // });
   
     var config = {
       draggable: true,
@@ -123,6 +162,49 @@
   
     updateStatus()
   </script>
-  
+<!-- chat handler -->
+      <script>
+        var socket = io();
+
+        var form = document.getElementById('form');
+        var input = document.getElementById('input');
+        var msgCount = 0
+
+        form.addEventListener('submit', function(e) {
+          e.preventDefault();
+          if (input.value) {
+            socket.emit('chat message', "[B] " + input.value);
+            input.value = '';
+          }
+        });
+
+        socket.on('chat message', function(msg) {
+          var item = document.createElement('li');
+          item.textContent = msg;
+          messages.appendChild(item);
+          msgCount += 1;
+          if(msgCount == 3){
+            messages.removeChild(messages.childNodes[0]);
+            msgCount -= 1;
+          }
+          window.scrollTo(0, document.body.scrollHeight);
+        });
+      </script>
+      <!-- Count down timer -->
+      <script>
+        var time = 180;
+        var counter;
+        var min = document.getElementById("min");
+        var sec = document.getElementById("sec");
+        var stop = document.getElementById("stop");
+
+        socket.on("start", function(){
+          timerStart()
+        });
+
+        function timerStart(){
+          counter = setInterval( count, 1000 );
+        }
+      </script>
   
   </body>

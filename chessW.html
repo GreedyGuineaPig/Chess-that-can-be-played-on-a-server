@@ -5,124 +5,199 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
   <title>white</title>
   <base href="../" />
-  <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css" integrity="sha384-q94+BZtLrkL1/ohfjR8c6L+A6qzNH9R2hBLwyoAfu3i/WCvQjzL2RQJ3uNHDISdU" crossorigin="anonymous"><!-- <script src="CS340/node_modules/socket.io/client-dist/socket.io.js"></script> -->
+  <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css" integrity="sha384-q94+BZtLrkL1/ohfjR8c6L+A6qzNH9R2hBLwyoAfu3i/WCvQjzL2RQJ3uNHDISdU" crossorigin="anonymous">
+  <style>
+     div.board{
+       
+       float: left;
+     }
+     div.infoSpace{
+       width: auto;
+       float: left;
+     }
+  </style>
 </head>
 <body>
-<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-<script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.2/chess.js"></script> 
-<script type="text/javascript" src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
-<script src="/socket.io/socket.io.js"></script>
-<div id="myBoard" style="width: 400px"></div>
-<label>Status:</label>
-<div id="status"></div>
-<label>FEN:</label>
-<div id="fen"></div>
-<label>PGN:</label>
-<div id="pgn"></div>
+  <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.2/chess.js"></script> 
+  <script type="text/javascript" src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <div class="board">
+    <div id="myBoard" style="width: 400px"></div>
+  </div>
+  <div class="infoSpace">
+    <label>Time: </label>
+    <span id="min">40</span> m
+    <span id="sec">0</span> s
+    <input id="CoountDown" type="button" onclick="countStop()" value="Stop">
+    <br>
+    <label>Status:</label>
+    <div id="status"></div>
+    <label>FEN:</label>
+    <div id="fen"></div>
+    <label>PGN:</label>
+    <div id="pgn"></div>
+    <ul id="messages"></ul>
+    <form id="form" action="">
+      <input id="input" autocomplete="off" /><button>Send</button>
+    </form>
+  </div>
 
-<script>
-  var socket = io();
-  var board = null
-  var game = new Chess()
-  var $status = $('#status')
-  var $fen = $('#fen')
-  var $pgn = $('#pgn')
 
-  function onDragStart (source, piece, position, orientation) {
-    // do not pick up pieces if the game is over
-    if (game.game_over()) return false
+  <script>
+    var socket = io();
+    var board = null
+    var game = new Chess()
+    var $status = $('#status')
+    var $fen = $('#fen')
+    var $pgn = $('#pgn')
 
-    if ((orientation === 'white' && piece.search(/^w/) === -1) ||
-      (orientation === 'black' && piece.search(/^b/) === -1)) {
-    return false
-    }
-  }
+    function onDragStart (source, piece, position, orientation) {
+      // do not pick up pieces if the game is over
+      if (game.game_over()) return false
 
-  function onDrop (source, target) {
-    // see if the move is legal
-    var move = game.move({
-      from: source,
-      to: target,
-      promotion: 'q' // NOTE: always promote to a queen for example simplicity
-    })
-
-    // illegal move
-    if (move === null) return 'snapback'
-
-    sendMove(move)
-
-    updateStatus()
-  }
-
-  function sendMove(move){
-    socket.emit("move", move);
-  }
-
-  // update the board position after the piece snap
-  // for castling, en passant, pawn promotion
-  function onSnapEnd () {
-    board.position(game.fen())
-  }
-
-  function updateStatus () {
-    var status = ''
-
-    var moveColor = 'White'
-    if (game.turn() === 'b') {
-      moveColor = 'Black'
-    }
-
-    // checkmate?
-    if (game.in_checkmate()) {
-      status = 'Game over, ' + moveColor + ' is in checkmate.'
-    }
-
-    // draw?
-    else if (game.in_draw()) {
-      status = 'Game over, drawn position'
-    }
-
-    // game still on
-    else {
-      status = moveColor + ' to move'
-
-      // check?
-      if (game.in_check()) {
-        status += ', ' + moveColor + ' is in check'
+      if ((orientation === 'white' && piece.search(/^w/) === -1) ||
+        (orientation === 'black' && piece.search(/^b/) === -1)) {
+      return false
       }
     }
 
-    $status.html(status)
-    $fen.html(game.fen())
-    $pgn.html(game.pgn())
-  }
+    function onDrop (source, target) {
+      // see if the move is legal
+      var move = game.move({
+        from: source,
+        to: target,
+        promotion: 'q' // NOTE: always promote to a queen for example simplicity
+      })
 
-  socket.on("move", function(move){
-        game.move(move);
-        board.position(game.fen())
-        updateStatus()
+      // illegal move
+      if (move === null) return 'snapback'
+
+      sendMove(move)
+
+      updateStatus()
+    }
+
+    function sendMove(move){
+      socket.emit("move", move);
+    }
+
+    // update the board position after the piece snap
+    // for castling, en passant, pawn promotion
+    function onSnapEnd () {
+      board.position(game.fen())
+    }
+
+    function updateStatus () {
+      var status = ''
+
+      var moveColor = 'White'
+      if (game.turn() === 'b') {
+        moveColor = 'Black'
+      }
+
+      // checkmate?
+      if (game.in_checkmate()) {
+        status = 'Game over, ' + moveColor + ' is in checkmate.'
+        status += "\nWait 10 second to rematch"
+        rematch();
+      }
+
+      // draw?
+      else if (game.in_draw()) {
+        status = 'Game over, drawn position'
+        status += "\nWait 10 second to rematch"
+        rematch();
+      }
+
+      // game still on
+      else {
+        status = moveColor + ' to move'
+
+        // check?
+        if (game.in_check()) {
+          status += ', ' + moveColor + ' is in check'
+        }
+      }
+
+      $status.html(status)
+      $fen.html(game.fen())
+      $pgn.html(game.pgn())
+    }
+
+    socket.on("move", function(move){
+          game.move(move);
+          board.position(game.fen())
+          updateStatus()
+      });
+
+    function rematch(){
+      setInterval(() => {
+        location.reload();
+      }, 10000);
+    }
+
+    // socket.on("disconnect", function(){
+    //   window.alert("The opponent disconnected.")
+    //   setInterval(() => {
+    //     location.reload();
+    //   }, 5000);
+    // });
+
+    function pieceTheme(piece){
+      return "https://chessboardjs.com/img/chesspieces/wikipedia/" + piece + ".png";
+    }
+    
+
+    var config = {
+      draggable: true,
+      position: 'start',
+      orientation: "white",
+      pieceTheme:pieceTheme,
+      onDragStart: onDragStart,
+      onDrop: onDrop,
+      onSnapEnd: onSnapEnd
+    }
+    board = Chessboard('myBoard', config)
+
+    updateStatus()
+
+  </script>
+<!-- chat handler -->
+
+  <script>
+    var socket = io();
+
+    var form = document.getElementById('form');
+    var input = document.getElementById('input');
+    var msgCount = 0;
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      if (input.value) {
+        socket.emit('chat message', "[W] " + input.value);
+        input.value = '';
+      }
     });
 
-  function pieceTheme(piece){
-    return "https://chessboardjs.com/img/chesspieces/wikipedia/" + piece + ".png";
-  }
-  
-
-  var config = {
-    draggable: true,
-    position: 'start',
-    orientation: "white",
-    pieceTheme:pieceTheme,
-    onDragStart: onDragStart,
-    onDrop: onDrop,
-    onSnapEnd: onSnapEnd
-  }
-  board = Chessboard('myBoard', config)
-
-  updateStatus()
-
-</script>
-
+    socket.on('chat message', function(msg) {
+      var item = document.createElement('li');
+      item.textContent = msg;
+      messages.appendChild(item);
+      msgCount += 1;
+      if(msgCount == 3){
+        messages.removeChild(messages.childNodes[0]);
+        msgCount -= 1;
+      }
+      window.scrollTo(0, document.body.scrollHeight);
+    });
+  </script>
+  <!-- Count down timer -->
+  <script>
+    socket.on("start", function(){
+      timerStart()
+    });
+  </script>
 
 </body>
 </html>
