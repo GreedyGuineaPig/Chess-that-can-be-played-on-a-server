@@ -29,10 +29,14 @@
    <div id="myBoard" style="width: 400px"></div>
  </div>
  <div class="infoSpace">
-  <label>Time: </label>
+  <label>Black time: </label>
   <span id="min">40</span> m
   <span id="sec">0</span> s
   <input id="stop" type="button" onclick="countStop()" value="Stop">
+  <br>
+  <label>White time: </label>
+  <span id="Omin">40</span> m
+  <span id="Osec">0</span> s
   <br>
    <label>Status:</label>
    <div id="status"></div>
@@ -55,6 +59,8 @@
     var $fen = $('#fen')
     var $pgn = $('#pgn')
     var isYourTurn = true
+    var $Omin = $("#Omin")
+    var $Osec = $("#Osec")
   
     function onDragStart (source, piece, position, orientation) {
       // do not pick up pieces if the game is over
@@ -141,11 +147,17 @@
         updateStatus()
     });
 
-    socket.on("stop", function(time){
-      // start your timer when you receive "stop"
-      var OppornentsTime = time // may indicate 
-      isYourTurn = true
-      startTimer()
+    socket.on("stop", function(min, sec, player){
+      // start your timer when you receive "stop" from the opponent
+      console.log(min)
+      console.log(sec)
+      console.log(player)
+      if(player == "White"){
+        $Omin.html(min);
+        $Osec.html(sec);
+        isYourTurn = true
+        startTimer()
+      }
     });
   
   
@@ -161,13 +173,6 @@
         location.reload();
       }, 10000);
     }
-
-    // socket.on("disconnect", function(){
-    //   window.alert("The opponent disconnected.")
-    //   setInterval(() => {
-    //     location.reload();
-    //   }, 5000);
-    // });
   
     var config = {
       draggable: true,
@@ -214,30 +219,58 @@
 
       <!-- Count down timer (in progress)-->
       <script>
-        var time = 180;
         var counter;
-        var min = document.getElementById("min");
-        var sec = document.getElementById("sec");
         var stop = document.getElementById("stop");
+        var $min = $('#min')
+        var $sec = $('#sec')
 
-        socket.on("start", function(){
-          startTimer()
-        });
 
         function startTimer(){
-          // TODO
-          // Count down and store minutes and seconds to min and sec
-          counter = setInterval( count, 1000 );
-        }
+              // TODO
+              // Count down and store minutes and seconds to min and sec
+              counter = setInterval( () => {
+                let minutes = parseInt(min.innerHTML);
+                let seconds = parseInt(sec.innerHTML);
+                if (seconds == 0) {
+                  seconds = 60;
+                  minutes -= 1;
+                }
+                seconds -= 1;
+                $min.html(minutes);
+                $sec.html(seconds);
+                if(minutes < 0){
+                  $status.html("You lose")
+                  socket.emit("timeUp", minutes, second, "black")
+                  rematch();
+                }
+              }, 1000 );
+            }
 
+        socket.on("timeUp", function(min, sec, player){
+          if(player == "white"){
+            $status.html("You win")
+            $Omin.html(min);
+            $Osec.html(sec);
+            rematch();
+          }
+        });
+        
         function countStop(){
           // TODO
           // when you press "stop", emit message and start the opponent's timer
-          socket.emit("stop", (min, sec))
-          isYourTurn = false
+          if(game.turn() == "w"){
+            // works after you make a movement, turn() == w
+            clearInterval(counter)
+            socket.emit("stop", parseInt(min.innerHTML), parseInt(sec.innerHTML), "Black")
+            isYourTurn = false
+          }
         }
 
         // TODO: min==0 and sec==0 -> you lose
+        function notifyJoined(){
+          socket.emit("start")
+        }
+        notifyJoined()
       </script>
   
   </body>

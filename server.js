@@ -29,17 +29,25 @@ io.on('connection', (socket) => {
   });
   socket.on('move', (move) => {
     // send movement to opponent.
-    console.log("move", move.from + "-" + move.to)
+    // console.log("move", move.from + "-" + move.to)
     io.emit('move', move);
   });
   socket.on("chat message", (msg) =>{
         io.emit("chat message", msg);
         console.log(msg)
   });
-  socket.on("stop", (time) =>{
-    io.emit("stop", time);
-    console.log(msg)
-});
+  socket.on("stop", (min, sec, player) =>{
+    // console.log("stop called")
+    io.emit("stop", min, sec, player);
+  });
+  socket.on("start", () =>{
+    // console.log("black joined")
+    io.emit("start");
+  });
+
+  socket.on("timeUp", (min, sec, player) =>{
+    io.emit("timeUp", min, sec, player);
+  })
 });
 
 http.listen(3000, () => {
